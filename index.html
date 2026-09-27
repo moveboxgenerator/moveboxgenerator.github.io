@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Move TV Box Generator Lozinke za Developer Options</title>
+<meta name="description" content="Izračunajte lozinku za developer opcije / USB otklanjanje grešaka za Android TV box na osnovu serijskog broja. Sve radi u vašem pretraživaču — ništa se ne šalje.">
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --card2:#1e222b; --border:#2a2f3a;
+    --fg:#e8eaed; --muted:#9aa1ac; --accent:#6ea8fe; --accent-fg:#0b1220;
+    --ok:#39d98a; --warn:#f5a524; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f4f6fa; --card:#ffffff; --card2:#f0f3f8; --border:#dfe4ec;
+      --fg:#161a20; --muted:#5b6472; --accent:#2f6fed; --accent-fg:#ffffff;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1115; --card:#171a21; --card2:#1e222b; --border:#2a2f3a;
+    --fg:#e8eaed; --muted:#9aa1ac; --accent:#6ea8fe; --accent-fg:#0b1220;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-text-size-adjust:100%;}
+  .wrap{max-width:640px;margin:0 auto;padding:32px 16px 64px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 24px;font-size:.95rem}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:18px}
+  label{display:block;font-weight:600;margin-bottom:8px;font-size:.9rem}
+  .hint{color:var(--muted);font-weight:400;font-size:.82rem}
+  input[type=text]{width:100%;padding:13px 14px;font-family:var(--mono);font-size:1rem;
+    background:var(--card2);color:var(--fg);border:1px solid var(--border);border-radius:10px;outline:none}
+  input[type=text]:focus{border-color:var(--accent)}
+  .row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  button{cursor:pointer;border:none;border-radius:10px;padding:13px 18px;font-size:.95rem;font-weight:600}
+  .primary{background:var(--accent);color:var(--accent-fg);flex:1;min-width:140px}
+  .primary:active{transform:translateY(1px)}
+  .ghost{background:var(--card2);color:var(--fg);border:1px solid var(--border)}
+  #result{display:none;margin-top:20px}
+  #result.show{display:block}
+  .pw-label{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+  .pw{font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--ok);
+    word-break:break-all;user-select:all;background:var(--card2);border:1px dashed var(--border);
+    border-radius:10px;padding:14px 16px}
+  .b64{font-family:var(--mono);font-size:.78rem;color:var(--muted);word-break:break-all;margin-top:12px}
+  .copied{color:var(--ok);font-size:.85rem;margin-left:8px;opacity:0;transition:opacity .2s}
+  .copied.on{opacity:1}
+  .err{color:var(--warn);font-size:.9rem;margin-top:12px}
+  details{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:0 20px;margin-bottom:14px}
+  summary{cursor:pointer;padding:16px 0;font-weight:600;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ ";color:var(--accent)}
+  details[open] summary::before{content:"▾ "}
+  details .body{padding-bottom:18px;color:var(--muted);font-size:.9rem}
+  details .body ol{padding-left:18px}
+  details code{font-family:var(--mono);background:var(--card2);padding:1px 5px;border-radius:5px;font-size:.85em;color:var(--fg)}
+  .note{font-size:.85rem;color:var(--muted)}
+  .note b{color:var(--fg)}
+  footer{color:var(--muted);font-size:.8rem;text-align:center;margin-top:28px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Move TV Box Generator Lozinke za Developer Options</h1>
+  <p class="sub">Izračunaj lozinku za USB otklanjanje grešaka / developer opcije za Android TV box (<code style="font-family:var(--mono)">com.android.tv.settings</code>) na osnovu serijskog broja. Sve se izvršava u vašem pretraživaču — ništa se ne šalje nigde.</p>
+
+  <div class="card">
+    <label for="serial">Serijski broj
+      <span class="hint">— Podešavanja ▸ Device Preferences ▸ About ▸ Status, ili nalepnica na kutiji. Razlikuje velika i mala slova.</span>
+    </label>
+    <input id="serial" type="text" placeholder="npr. S10001473240506591" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="row">
+      <button class="primary" id="go">Izračunaj lozinku</button>
+      <button class="ghost" id="unknown" title="Ako uređaj prijavljuje serijski broj kao &quot;unknown&quot;">Probaj „unknown“</button>
+    </div>
+    <div id="result">
+      <div class="pw-label">Lozinka <span class="hint">(unesite tačno, uključujući svako <code style="font-family:var(--mono)">=</code>; velika i mala slova nisu bitna)</span></div>
+      <div class="pw" id="pw" title="Kliknite da izaberete"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="ghost" id="copy">Kopiraj</button><span class="copied" id="copied">kopirano ✓</span>
+      </div>
+      <div class="b64" id="b64"></div>
+    </div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <details>
+    <summary>Kako radi</summary>
+    <div class="body">
+      Rekonstruisano iz klasa <code>PwdVerify</code>, <code>AESUtils</code> i <code>KeyGen</code> u aplikaciji:
+      <ol>
+        <li><code>plainText = serijskiBroj + "ed12a270c07a58074126a0487de27f63"</code></li>
+        <li>AES ključ = <code>PBKDF2-HMAC-SHA1(plainText, salt="sdmc", 10000, 128-bit)</code> → 32 hex karaktera, korišćeno kao sirovi ASCII bajtovi (AES-256)</li>
+        <li><code>enc = Base64( AES-256/ECB/PKCS5( plainText ) )</code></li>
+        <li>lozinka = <code>(enc[0:3] + enc[-3:]).toLowerCase()</code></li>
+      </ol>
+      Pretraživači nemaju AES-ECB, pa ova stranica izvodi svaki ECB blok iz jednoblokovnog AES-CBC sa nultim IV (matematički identično).
+    </div>
+  </details>
+
+  <div class="card">
+    <p class="note"><b>Ako lozinka bude odbijena:</b> proverite serijski broj (bez izostavljenih ili viška karaktera). Neki uređaji koriste drugačiji interni serijski broj (<code style="font-family:var(--mono)">ro.boot.serialno</code>) od onog prikazanog na ekranu. Postoji i OEM override — ako je bezbednosno podešavanje <code style="font-family:var(--mono)">security_symbol</code> postavljeno (≥6 karaktera), ta vrednost je lozinka umesto izračunate i ne može se izračunati ovde.</p>
+  </div>
+
+  <footer>Radi 100% u pretraživaču. Zahteva HTTPS (npr. GitHub Pages).</footer>
+</div>
+
+<script>
+const FIXED = "ed12a270c07a58074126a0487de27f63";
+const SALT  = new Uint8Array([0x73,0x64,0x6d,0x63]); // "sdmc"
+const ITERS = 10000;
+const enc = new TextEncoder();
+const $ = id => document.getElementById(id);
+
+const toHex = buf => [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+const b64 = bytes => { let s=""; for(const b of bytes) s+=String.fromCharCode(b); return btoa(s); };
+function pkcs5(bytes){ const p=16-(bytes.length%16); const out=new Uint8Array(bytes.length+p); out.set(bytes); out.fill(p,bytes.length); return out; }
+
+async function derivePassword(serial){
+  const plain = serial + FIXED;
+  const baseKey = await crypto.subtle.importKey("raw", enc.encode(plain), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", salt:SALT, iterations:ITERS, hash:"SHA-1"}, baseKey, 128);
+  const keyHex = toHex(bits);
+  const aesKey = await crypto.subtle.importKey("raw", enc.encode(keyHex), {name:"AES-CBC"}, false, ["encrypt"]);
+  const padded = pkcs5(enc.encode(plain));
+  const zeroIV = new Uint8Array(16);
+  const out = new Uint8Array(padded.length);
+  for(let i=0;i<padded.length;i+=16){
+    const block = padded.slice(i,i+16);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({name:"AES-CBC", iv:zeroIV}, aesKey, block));
+    out.set(ct.slice(0,16), i);
+  }
+  const base64 = b64(out);
+  return { base64, pwd:(base64.slice(0,3)+base64.slice(-3)).toLowerCase() };
+}
+
+async function run(serial){
+  $("err").textContent = "";
+  if(!crypto || !crypto.subtle){
+    $("err").textContent = "Web Crypto nije dostupan. Otvorite ovu stranicu preko https:// (GitHub Pages radi).";
+    return;
+  }
+  try{
+    const {base64, pwd} = await derivePassword(serial);
+    $("pw").textContent = pwd;
+    $("b64").textContent = "base64: " + base64;
+    $("result").classList.add("show");
+  }catch(e){
+    $("err").textContent = "Greška: " + e.message;
+  }
+}
+
+$("go").addEventListener("click", ()=>run($("serial").value.trim()));
+$("serial").addEventListener("keydown", e=>{ if(e.key==="Enter") run($("serial").value.trim()); });
+$("unknown").addEventListener("click", ()=>{ $("serial").value="unknown"; run("unknown"); });
+$("copy").addEventListener("click", async ()=>{
+  try{ await navigator.clipboard.writeText($("pw").textContent);
+    $("copied").classList.add("on"); setTimeout(()=>$("copied").classList.remove("on"),1200);
+  }catch(_){}
+});
+</script>
+</body>
+</html>
